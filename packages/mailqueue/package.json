@@ -1,7 +1,7 @@
 {
-  "name": "nodemailer-mailqueue-transport",
+  "name": "mailqueue",
   "version": "0.1.0",
-  "description": "Nodemailer transport for the LDMax mailqueue API",
+  "description": "Simple JavaScript client for the LDMax mailqueue API",
   "type": "module",
   "exports": {
     ".": {
@@ -16,29 +16,25 @@
     "LICENSE"
   ],
   "keywords": [
-    "nodemailer",
-    "transport",
     "email",
     "mailqueue",
+    "api-client",
     "sveltekit",
     "svelte"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mightymax/mailqueue.git",
-    "directory": "packages/nodemailer-mailqueue-transport"
+    "directory": "packages/mailqueue"
   },
-  "homepage": "https://github.com/mightymax/mailqueue/tree/main/packages/nodemailer-mailqueue-transport",
+  "homepage": "https://github.com/mightymax/mailqueue/tree/main/packages/mailqueue",
   "bugs": {
     "url": "https://github.com/mightymax/mailqueue/issues"
   },
-  "license": "EUPL-1.1",
+  "license": "MIT",
   "sideEffects": false,
   "engines": {
     "node": ">=18"
-  },
-  "peerDependencies": {
-    "nodemailer": "^6.0.0 || ^7.0.0"
   },
   "publishConfig": {
     "access": "public"

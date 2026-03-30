@@ -59,7 +59,7 @@ curl -X POST http://localhost:5173/api/v1/messages \
 
 Deze repo bevat ook een losse npm-package voor apps die via Nodemailer naar mailqueue willen posten:
 
-- [`packages/nodemailer-mailqueue-transport/package.json`](/Users/marklindeman/Code/LDMax/mailqueue/packages/nodemailer-mailqueue-transport/package.json)
-- [`packages/nodemailer-mailqueue-transport/README.md`](/Users/marklindeman/Code/LDMax/mailqueue/packages/nodemailer-mailqueue-transport/README.md)
+- [`packages/mailqueue/package.json`](/Users/marklindeman/Code/LDMax/mailqueue/packages/mailqueue/package.json)
+- [`packages/mailqueue/README.md`](/Users/marklindeman/Code/LDMax/mailqueue/packages/mailqueue/README.md)
 
-Die package is bedoeld voor publicatie op npmjs en bevat Engelstalige documentatie, inclusief een compleet SvelteKit server-action voorbeeld.
+Die package heet `mailqueue`, is bedoeld voor publicatie op npmjs, en bevat Engelstalige documentatie inclusief een compleet SvelteKit server-action voorbeeld.
