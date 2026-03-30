@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: mailqueue-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04-arm
+    env:
+      IMAGE_REPO: ghcr.io/mightymax/mailqueue
+      KUSTOMIZATION_PATH: infrastructure/overlays/prod/kustomization.yaml
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUILD_TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          IMAGE_TAG="v${VERSION}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$(git rev-parse --short=7 "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
+          echo "build_timestamp=${BUILD_TIMESTAMP}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "full_image=${IMAGE_REPO}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Write release version metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > static/release-version.json <<EOF
+          {
+            "version": "${{ steps.meta.outputs.version }}",
+            "gitHash": "${{ steps.meta.outputs.short_sha }}",
+            "imageTag": "${{ steps.meta.outputs.image_tag }}",
+            "buildTimestamp": "${{ steps.meta.outputs.build_timestamp }}"
+          }
+          EOF
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ steps.meta.outputs.full_image }}
+            ${{ env.IMAGE_REPO }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/mightymax/mailqueue
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update release branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          git checkout -B release
+          if git rev-parse --verify origin/release >/dev/null 2>&1; then
+            git restore --source=origin/release --staged --worktree .github/workflows
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path(os.environ["KUSTOMIZATION_PATH"])
+          content = path.read_text()
+          updated = re.sub(r'(\n\s*newTag:\s*).+\n', rf'\1{os.environ["IMAGE_TAG"]}\n', content, count=1)
+          if updated == content:
+              raise SystemExit(f"No newTag entry updated in {path}")
+          path.write_text(updated)
+          PY
+
+          git add "$KUSTOMIZATION_PATH" static/release-version.json
+          git commit -m "release: ${IMAGE_TAG}"
+          git push --force origin HEAD:release
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}

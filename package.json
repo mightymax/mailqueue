@@ -1,0 +1,38 @@
+{
+  "name": "mailqueue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "preversion": "node scripts/preversion-check.js",
+    "postversion": "git push origin main --follow-tags",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "migrate": "npm run db:migrate",
+    "worker": "tsx scripts/run-worker.ts",
+    "infra:update-secrets": "./infrastructure/scripts/create-app-secret.sh"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^5.2.12",
+    "@sveltejs/kit": "^2.48.4",
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@types/node": "^24.6.1",
+    "@types/nodemailer": "^7.0.3",
+    "drizzle-kit": "^0.31.4",
+    "svelte": "^5.39.6",
+    "svelte-check": "^4.3.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.5",
+    "nodemailer": "^7.0.6",
+    "postgres": "^3.4.7",
+    "zod": "^4.1.11"
+  }
+}
