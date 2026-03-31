@@ -8,4 +8,4 @@ namespace: mailqueue
 
 images:
   - name: ghcr.io/mightymax/mailqueue
-    newTag: v0.1.0
+    newTag: v1.0.3
