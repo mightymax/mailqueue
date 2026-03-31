@@ -48,9 +48,23 @@ export const actions: Actions = {
   test: async ({ request, cookies, params }) => {
     const parsed = await parseSmtpForm(request);
     if (!parsed.ok) {
+      console.error('[smtp-services] edit:test invalid form', {
+        id: params.id,
+        error: parsed.error,
+        values: { ...parsed.values, password: '<redacted>' }
+      });
       setFlash(cookies, `smtp-service-${params.id}`, { error: parsed.error, stage: 'test', values: parsed.values });
       redirect(303, `/smtp-services/${params.id}`);
     }
+
+    console.log('[smtp-services] edit:test submitted', {
+      id: params.id,
+      name: parsed.value.name,
+      host: parsed.value.host,
+      port: parsed.value.port,
+      secure: parsed.value.secure,
+      username: parsed.value.username
+    });
 
     try {
       await verifySmtpConnection(parsed.value);
@@ -60,8 +74,16 @@ export const actions: Actions = {
         message: 'SMTP verbinding succesvol getest',
         values: parsed.values
       });
-      redirect(303, `/smtp-services/${params.id}`);
     } catch (err) {
+      console.error('[smtp-services] edit:test failed', {
+        id: params.id,
+        name: parsed.value.name,
+        host: parsed.value.host,
+        port: parsed.value.port,
+        secure: parsed.value.secure,
+        username: parsed.value.username,
+        error: err instanceof Error ? err.message : String(err)
+      });
       setFlash(cookies, `smtp-service-${params.id}`, {
         error: err instanceof Error ? err.message : 'SMTP test failed',
         stage: 'test',
@@ -69,17 +91,42 @@ export const actions: Actions = {
       });
       redirect(303, `/smtp-services/${params.id}`);
     }
+
+    redirect(303, `/smtp-services/${params.id}`);
   },
   update: async ({ request, params, cookies }) => {
     const parsed = await parseSmtpForm(request);
     if (!parsed.ok) {
+      console.error('[smtp-services] edit:update invalid form', {
+        id: params.id,
+        error: parsed.error,
+        values: { ...parsed.values, password: '<redacted>' }
+      });
       setFlash(cookies, `smtp-service-${params.id}`, { error: parsed.error, stage: 'update', values: parsed.values });
       redirect(303, `/smtp-services/${params.id}`);
     }
 
+    console.log('[smtp-services] edit:update submitted', {
+      id: params.id,
+      name: parsed.value.name,
+      host: parsed.value.host,
+      port: parsed.value.port,
+      secure: parsed.value.secure,
+      username: parsed.value.username
+    });
+
     try {
       await verifySmtpConnection(parsed.value);
     } catch (err) {
+      console.error('[smtp-services] edit:update verify failed', {
+        id: params.id,
+        name: parsed.value.name,
+        host: parsed.value.host,
+        port: parsed.value.port,
+        secure: parsed.value.secure,
+        username: parsed.value.username,
+        error: err instanceof Error ? err.message : String(err)
+      });
       setFlash(cookies, `smtp-service-${params.id}`, {
         error: err instanceof Error ? err.message : 'SMTP test failed',
         stage: 'update',
@@ -89,6 +136,13 @@ export const actions: Actions = {
     }
 
     await updateSmtpService(params.id, parsed.value);
+    console.log('[smtp-services] edit:update success', {
+      id: params.id,
+      name: parsed.value.name,
+      host: parsed.value.host,
+      port: parsed.value.port,
+      secure: parsed.value.secure
+    });
     redirect(303, `/smtp-services/${params.id}?saved=1`);
   }
 };

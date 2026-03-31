@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import type { QueueMailInput } from './validators.js';
 import { getDb } from './db.js';
 import { getConfig } from './env.js';
@@ -31,9 +31,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   return row ?? { queued: 0, processing: 0, failed: 0, sentToday: 0, tokenCount: 0, smtpServiceCount: 0 };
 }
 
-export async function listQueue(limit = 100) {
+export async function listQueue(limit = 100, status?: string) {
   const db = getDb();
-  return db
+  const query = db
     .select({
       id: mailQueue.id,
       status: mailQueue.status,
@@ -57,6 +57,43 @@ export async function listQueue(limit = 100) {
     .leftJoin(smtpServices, eq(smtpServices.id, apiTokens.smtpServiceId))
     .orderBy(desc(mailQueue.createdAt))
     .limit(limit);
+
+  return status ? query.where(eq(mailQueue.status, status)) : query;
+}
+
+export async function getQueueItem(id: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      id: mailQueue.id,
+      status: mailQueue.status,
+      recipient: mailQueue.recipient,
+      subject: mailQueue.subject,
+      textBody: mailQueue.textBody,
+      htmlBody: mailQueue.htmlBody,
+      fromEmail: mailQueue.fromEmail,
+      replyTo: mailQueue.replyTo,
+      headersJson: mailQueue.headersJson,
+      attempts: mailQueue.attempts,
+      maxAttempts: mailQueue.maxAttempts,
+      scheduledAt: mailQueue.scheduledAt,
+      lockedAt: mailQueue.lockedAt,
+      sentAt: mailQueue.sentAt,
+      failedAt: mailQueue.failedAt,
+      lastError: mailQueue.lastError,
+      createdAt: mailQueue.createdAt,
+      updatedAt: mailQueue.updatedAt,
+      tokenName: apiTokens.name,
+      tokenWebsite: apiTokens.websiteUrl,
+      smtpServiceName: smtpServices.name
+    })
+    .from(mailQueue)
+    .leftJoin(apiTokens, eq(apiTokens.id, mailQueue.apiTokenId))
+    .leftJoin(smtpServices, eq(smtpServices.id, apiTokens.smtpServiceId))
+    .where(eq(mailQueue.id, id))
+    .limit(1);
+
+  return row ?? null;
 }
 
 export async function listTokens() {
@@ -308,27 +345,56 @@ export async function enqueueMail(token: { id: string; fromEmail: string | null 
 }
 
 export async function retryQueueItem(id: string) {
+  return resetQueueItems([id]);
+}
+
+export async function resetQueueItems(ids: string[]) {
   const db = getDb();
+  if (ids.length === 0) return 0;
   await db
     .update(mailQueue)
     .set({
       status: 'queued',
+      attempts: 0,
       lockedAt: null,
       failedAt: null,
+      sentAt: null,
       lastError: null,
       scheduledAt: new Date()
     })
-    .where(and(eq(mailQueue.id, id), inArray(mailQueue.status, ['failed', 'cancelled'])));
+    .where(inArray(mailQueue.id, ids));
+
+  return ids.length;
 }
 
 export async function cancelQueueItem(id: string) {
+  return setQueueItemsStatus([id], 'cancelled');
+}
+
+export async function setQueueItemsStatus(ids: string[], status: 'queued' | 'cancelled' | 'failed') {
   const db = getDb();
+  if (ids.length === 0) return 0;
+  const nextScheduledAt = status === 'queued' ? new Date() : undefined;
+  const failedAt = status === 'cancelled' || status === 'failed' ? new Date() : null;
+
   await db
     .update(mailQueue)
     .set({
-      status: 'cancelled',
+      status,
       lockedAt: null,
-      failedAt: new Date()
+      failedAt,
+      sentAt: status === 'queued' ? null : undefined,
+      lastError: status === 'queued' ? null : undefined,
+      scheduledAt: nextScheduledAt
     })
-    .where(and(eq(mailQueue.id, id), inArray(mailQueue.status, ['queued', 'failed'])));
+    .where(inArray(mailQueue.id, ids));
+
+  return ids.length;
+}
+
+export async function deleteQueueItems(ids: string[]) {
+  const db = getDb();
+  if (ids.length === 0) return 0;
+  await db.delete(mailQueue).where(inArray(mailQueue.id, ids));
+  return ids.length;
 }

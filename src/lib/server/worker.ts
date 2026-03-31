@@ -25,6 +25,112 @@ type ClaimedMail = {
   maxAttempts: number;
 };
 
+type SendMailInfo = {
+  accepted?: string[];
+  rejected?: string[];
+  pending?: string[];
+  response?: string;
+  messageId?: string;
+};
+
+type InspectableMail = {
+  id: string;
+  status: string;
+  recipient: string;
+  subject: string;
+  attempts: number;
+  maxAttempts: number;
+  scheduledAt: string;
+  lockedAt: string | null;
+  lastError: string | null;
+};
+
+function logQueueEvent(event: string, mail: Pick<ClaimedMail, 'id' | 'recipient' | 'subject' | 'attempts' | 'maxAttempts'>, extra?: string) {
+  const parts = [
+    `[queue] ${event}`,
+    `id=${mail.id}`,
+    `to=${mail.recipient}`,
+    `attempt=${mail.attempts}/${mail.maxAttempts}`,
+    `subject=${JSON.stringify(mail.subject)}`
+  ];
+
+  if (extra) {
+    parts.push(extra);
+  }
+
+  console.log(parts.join(' '));
+}
+
+function formatRecipientList(values: string[] | undefined) {
+  if (!values || values.length === 0) return '-';
+  return values.join(',');
+}
+
+function getBlockedReason(mail: InspectableMail, now: Date) {
+  const scheduledAt = new Date(mail.scheduledAt);
+  if (scheduledAt > now) {
+    return `scheduled until=${scheduledAt.toISOString()}`;
+  }
+
+  if (mail.attempts >= mail.maxAttempts) {
+    return 'max-attempts';
+  }
+
+  if (mail.lockedAt) {
+    const lockedAt = new Date(mail.lockedAt);
+    if (lockedAt.getTime() > now.getTime() - 15 * 60 * 1000) {
+      return `locked since=${lockedAt.toISOString()}`;
+    }
+  }
+
+  if (mail.status === 'sending') {
+    return 'already-sending';
+  }
+
+  return 'not-claimable';
+}
+
+async function logBlockedQueueItems(limit: number) {
+  const rows = await getSql().unsafe<InspectableMail[]>(
+    `
+    select
+      id,
+      status,
+      recipient,
+      subject,
+      attempts,
+      max_attempts as "maxAttempts",
+      scheduled_at as "scheduledAt",
+      locked_at as "lockedAt",
+      last_error as "lastError"
+    from mail_queue
+    where status in ('queued', 'failed', 'sending')
+    order by scheduled_at asc, created_at asc
+    limit $1
+    `,
+    [limit]
+  );
+
+  const now = new Date();
+  for (const mail of rows) {
+    const reason = getBlockedReason(mail, now);
+    console.log(
+      [
+        '[queue] blocked',
+        `id=${mail.id}`,
+        `status=${mail.status}`,
+        `to=${mail.recipient}`,
+        `attempt=${mail.attempts}/${mail.maxAttempts}`,
+        `reason=${reason}`,
+        `subject=${JSON.stringify(mail.subject)}`,
+        mail.lastError ? `lastError=${JSON.stringify(mail.lastError)}` : null
+      ]
+        .filter(Boolean)
+        .join(' ')
+    );
+  }
+}
+
 function getTransporter(mail: ClaimedMail) {
   const config = getConfig();
   if (
@@ -140,11 +246,17 @@ export async function markMailFailed(id: string, errorMessage: string) {
 
 export async function deliverMailBatch(limit: number) {
   const claimed = await claimQueuedMail(limit);
+  console.log(`[queue] claimed count=${claimed.length} limit=${limit}`);
+
+  if (claimed.length === 0) {
+    await logBlockedQueueItems(5);
+  }
 
   for (const mail of claimed) {
     try {
+      logQueueEvent('sending', mail);
       const transporter = getTransporter(mail);
-      await transporter.sendMail({
+      const info = (await transporter.sendMail({
         to: mail.recipient,
         from: mail.fromEmail,
         replyTo: mail.replyTo ?? undefined,
@@ -152,11 +264,37 @@ export async function deliverMailBatch(limit: number) {
         text: mail.textBody ?? undefined,
         html: mail.htmlBody ?? undefined,
         headers: mail.headersJson
-      });
+      })) as SendMailInfo;
+
+      const accepted = info.accepted ?? [];
+      const rejected = info.rejected ?? [];
+      const pending = info.pending ?? [];
+
+      if (accepted.length === 0) {
+        const details = [
+          `response=${JSON.stringify(info.response ?? 'No SMTP response')}`,
+          `rejected=${JSON.stringify(rejected)}`,
+          `pending=${JSON.stringify(pending)}`
+        ].join(' ');
+        throw new Error(`SMTP accepted no recipients ${details}`);
+      }
+
       await markMailSent(mail.id, mail.apiTokenId);
+      logQueueEvent(
+        'sent',
+        mail,
+        [
+          `messageId=${JSON.stringify(info.messageId ?? '-')}`,
+          `accepted=${formatRecipientList(accepted)}`,
+          `rejected=${formatRecipientList(rejected)}`,
+          `pending=${formatRecipientList(pending)}`,
+          `response=${JSON.stringify(info.response ?? '-')}`
+        ].join(' ')
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown SMTP error';
       await markMailFailed(mail.id, message);
+      logQueueEvent('failed', mail, `error=${JSON.stringify(message)}`);
     }
   }
 

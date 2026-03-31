@@ -2,6 +2,8 @@
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
+
+  const statuses = ['queued', 'sending', 'sent', 'failed', 'cancelled'];
 </script>
 
 <section class="card">
@@ -13,6 +15,9 @@
     <div class="header-actions">
       <p>{data.items.length} items geladen</p>
       <form method="POST" action="?/sendBatch">
+        {#if data.status}
+          <input type="hidden" name="currentStatus" value={data.status} />
+        {/if}
         <button type="submit">Verstuur batch nu</button>
       </form>
     </div>
@@ -34,52 +39,97 @@
     <p class="feedback">Queue-item geannuleerd.</p>
   {/if}
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Status</th>
-          <th>Ontvanger</th>
-          <th>Onderwerp</th>
-          <th>Token</th>
-          <th>Pogingen</th>
-          <th>Aangemaakt</th>
-          <th>Actie</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each data.items as item (item.id)}
-          <tr>
-            <td><span class={`status ${item.status}`}>{item.status}</span></td>
-            <td>{item.recipient}</td>
-            <td>
-              <strong>{item.subject}</strong>
-              {#if item.lastError}
-                <small>{item.lastError}</small>
-              {/if}
-            </td>
-            <td>{item.tokenName ?? 'n/a'}</td>
-            <td>{item.attempts}/{item.maxAttempts}</td>
-            <td>{new Date(item.createdAt).toLocaleString()}</td>
-            <td class="actions">
-              <form method="POST" action="?/retry">
-                <input type="hidden" name="id" value={item.id} />
-                <button type="submit" disabled={item.status === 'sent' || item.status === 'sending'}>Retry</button>
-              </form>
-              <form method="POST" action="?/cancel">
-                <input type="hidden" name="id" value={item.id} />
-                <button type="submit" disabled={item.status === 'sent' || item.status === 'cancelled'}>Cancel</button>
-              </form>
-            </td>
-          </tr>
-        {:else}
-          <tr>
-            <td colspan="7">Queue is leeg.</td>
-          </tr>
+  {#if data.action === 'reset'}
+    <p class="feedback success">Queue-item(s) opnieuw op queued gezet.</p>
+  {/if}
+
+  {#if data.action?.startsWith('status-')}
+    <p class="feedback success">Status aangepast naar {data.action.replace('status-', '')}.</p>
+  {/if}
+
+  {#if data.action === 'delete'}
+    <p class="feedback">Queue-item(s) gewist.</p>
+  {/if}
+
+  <form method="GET" class="filter-bar">
+    <label>
+      Status filter
+      <select name="status">
+        <option value="">Alle statussen</option>
+        {#each statuses as status (status)}
+          <option value={status} selected={data.status === status}>{status}</option>
         {/each}
-      </tbody>
-    </table>
-  </div>
+      </select>
+    </label>
+    <button type="submit" class="secondary">Filter</button>
+    <a href="/queue" class="reset-link">Reset filter</a>
+  </form>
+
+  <form method="POST" class="table-form">
+    {#if data.status}
+      <input type="hidden" name="currentStatus" value={data.status} />
+    {/if}
+
+    <div class="batch-bar">
+      <button type="submit" formaction="?/reset">Reset naar queued</button>
+      <div class="status-change">
+        <select name="nextStatus">
+          <option value="queued">queued</option>
+          <option value="failed">failed</option>
+          <option value="cancelled">cancelled</option>
+        </select>
+        <button type="submit" formaction="?/setStatus" class="secondary">Pas status aan</button>
+      </div>
+      <button type="submit" formaction="?/delete" class="danger">Wis geselecteerde</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Status</th>
+            <th>Ontvanger</th>
+            <th>Onderwerp</th>
+            <th>Token</th>
+            <th>Pogingen</th>
+            <th>Aangemaakt</th>
+            <th>Actie</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each data.items as item (item.id)}
+            <tr>
+              <td>
+                <input type="checkbox" name="ids" value={item.id} />
+              </td>
+              <td><span class={`status ${item.status}`}>{item.status}</span></td>
+              <td>{item.recipient}</td>
+              <td>
+                <a href={`/queue/${item.id}`} class="subject-link">
+                  <strong>{item.subject}</strong>
+                </a>
+                {#if item.lastError}
+                  <small>{item.lastError}</small>
+                {/if}
+              </td>
+              <td>{item.tokenName ?? 'n/a'}</td>
+              <td>{item.attempts}/{item.maxAttempts}</td>
+              <td>{new Date(item.createdAt).toLocaleString()}</td>
+              <td class="actions">
+                <button type="submit" formaction="?/reset" name="ids" value={item.id}>Reset</button>
+                <button type="submit" formaction="?/delete" name="ids" value={item.id} class="danger">Wis</button>
+              </td>
+            </tr>
+          {:else}
+            <tr>
+              <td colspan="8">Queue is leeg.</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </form>
 </section>
 
 <style>
@@ -117,8 +167,27 @@
     gap: 1rem;
   }
 
+  .filter-bar,
+  .batch-bar {
+    display: flex;
+    align-items: end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .filter-bar label,
+  .status-change {
+    display: grid;
+    gap: 0.35rem;
+  }
+
   .table-wrap {
     overflow: auto;
+  }
+
+  .table-form {
+    display: grid;
   }
 
   table {
@@ -160,8 +229,10 @@
   .actions {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
+  select,
   button {
     border: 0;
     border-radius: 999px;
@@ -169,6 +240,21 @@
     color: #f6f1e8;
     padding: 0.55rem 0.9rem;
     cursor: pointer;
+  }
+
+  select {
+    border: 1px solid rgba(29, 36, 33, 0.15);
+    background: rgba(255, 255, 255, 0.82);
+    color: #1d2421;
+  }
+
+  .secondary {
+    background: #d9d0c1;
+    color: #1d2421;
+  }
+
+  .danger {
+    background: #9b5f55;
   }
 
   button:disabled {
@@ -183,5 +269,10 @@
 
   .success {
     color: #2f6f5b;
+  }
+
+  .reset-link,
+  .subject-link {
+    color: #9a5d37;
   }
 </style>
