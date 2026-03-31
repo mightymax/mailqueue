@@ -62,4 +62,4 @@ Deze repo bevat ook een losse npm-package voor apps die via Nodemailer naar mail
 - [`packages/mailqueue/package.json`](/Users/marklindeman/Code/LDMax/mailqueue/packages/mailqueue/package.json)
 - [`packages/mailqueue/README.md`](/Users/marklindeman/Code/LDMax/mailqueue/packages/mailqueue/README.md)
 
-Die package heet `mailqueue`, is bedoeld voor publicatie op npmjs, en bevat Engelstalige documentatie inclusief een compleet SvelteKit server-action voorbeeld.
+Die package heet `@mightymax/mailqueue`, is bedoeld voor publicatie op npmjs, en bevat Engelstalige documentatie inclusief een compleet SvelteKit server-action voorbeeld.

@@ -1,33 +1,19 @@
-# mailqueue
+# @mightymax/mailqueue
 
-`mailqueue` is a tiny JavaScript client for the LDMax mailqueue API.
+`@mightymax/mailqueue` is a small JavaScript client for the LDMax mailqueue API.
 
-It is built for server-side apps that want a very small API surface:
-
-```ts
-import { sendMail } from 'mailqueue';
-
-await sendMail({
-  apiUrl: 'https://mailqueue.example.com',
-  token: process.env.MAILQUEUE_TOKEN!,
-  to: 'user@example.com',
-  subject: 'Welcome',
-  text: 'Your account is ready.'
-});
-```
-
-This works especially well in SvelteKit server actions, endpoints, background jobs, and any other Node.js process that wants to queue email without speaking SMTP directly.
+It is built for server-side apps that want to queue email over HTTP instead of talking to SMTP directly.
 
 ## Installation
 
 ```bash
-npm install mailqueue
+npm install @mightymax/mailqueue
 ```
 
 ## Quick Start
 
 ```ts
-import { sendMail } from 'mailqueue';
+import { sendMail } from '@mightymax/mailqueue';
 
 await sendMail({
   apiUrl: 'https://mailqueue.example.com',
@@ -38,47 +24,39 @@ await sendMail({
 });
 ```
 
-The mailqueue API chooses the final `from` address based on the bearer token configured in the mailqueue admin UI.
+The final `from` address is chosen by the mailqueue API based on the bearer token configuration.
 
-## Options
+## Supported Options
 
-| Option | Required | Description |
-| --- | --- | --- |
-| `token` | Yes | Bearer token created in the mailqueue admin UI |
-| `to` | Yes | Recipient email address |
-| `subject` | Yes | Message subject |
-| `text` | No | Plain-text body |
-| `html` | No | HTML body |
-| `replyTo` | No | Reply-to email address |
-| `scheduledAt` | No | ISO datetime with offset, for delayed delivery |
-| `maxAttempts` | No | Retry count between `1` and `10` |
-| `headers` | No | Extra string headers |
-| `apiUrl` | No | Base URL of the mailqueue app. Defaults to `process.env.MAILQUEUE_URL` or `http://localhost:5173` |
-| `endpoint` | No | API path, defaults to `/api/v1/messages` |
-| `timeoutMs` | No | HTTP timeout in milliseconds, defaults to `10000` |
-| `fetch` | No | Custom `fetch` implementation, useful for tests |
+- `token`: required bearer token from the mailqueue admin UI
+- `to`: required recipient email address
+- `subject`: required subject
+- `text`: optional plain-text body
+- `html`: optional HTML body
+- `replyTo`: optional reply-to email address
+- `scheduledAt`: optional ISO datetime with offset
+- `maxAttempts`: optional retry count between `1` and `10`
+- `headers`: optional extra string headers
+- `apiUrl`: optional base URL, defaults to `process.env.MAILQUEUE_URL` or `http://localhost:5173`
+- `endpoint`: optional API path, defaults to `/api/v1/messages`
+- `timeoutMs`: optional HTTP timeout, defaults to `10000`
+- `fetch`: optional custom `fetch` implementation
 
 At least one of `text` or `html` is required.
 
-## Complete SvelteKit Example
+## SvelteKit Example
 
-This example shows a simple contact form that queues mail from a SvelteKit server action.
-
-### 1. Environment Variables
-
-`.env`
+### Environment
 
 ```dotenv
 MAILQUEUE_URL=https://mailqueue.example.com
 MAILQUEUE_TOKEN=mq_xxxxx_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-### 2. Server-side Helper
-
-`src/lib/server/mailer.ts`
+### Server helper
 
 ```ts
-import { sendMail } from 'mailqueue';
+import { sendMail } from '@mightymax/mailqueue';
 
 export async function sendContactNotification(input: {
   name: string;
@@ -104,9 +82,7 @@ export async function sendContactNotification(input: {
 }
 ```
 
-### 3. SvelteKit Server Action
-
-`src/routes/+page.server.ts`
+### Server action
 
 ```ts
 import { fail } from '@sveltejs/kit';
@@ -136,54 +112,15 @@ export const actions = {
       });
     }
 
-    return {
-      success: true
-    };
+    return { success: true };
   }
 };
 ```
 
-### 4. Svelte Page
-
-`src/routes/+page.svelte`
-
-```svelte
-<script lang="ts">
-  let { form } = $props();
-</script>
-
-<form method="POST">
-  <label>
-    Name
-    <input name="name" value={form?.values?.name ?? ''} />
-  </label>
-
-  <label>
-    Email
-    <input name="email" type="email" value={form?.values?.email ?? ''} />
-  </label>
-
-  <label>
-    Message
-    <textarea name="message">{form?.values?.message ?? ''}</textarea>
-  </label>
-
-  <button type="submit">Send</button>
-
-  {#if form?.error}
-    <p>{form.error}</p>
-  {/if}
-
-  {#if form?.success}
-    <p>Your message has been queued.</p>
-  {/if}
-</form>
-```
-
-## Scheduled Delivery Example
+## Scheduled Delivery
 
 ```ts
-import { sendMail } from 'mailqueue';
+import { sendMail } from '@mightymax/mailqueue';
 
 await sendMail({
   token: process.env.MAILQUEUE_TOKEN!,
@@ -204,11 +141,9 @@ await sendMail({
 - timeouts
 - non-2xx HTTP responses
 
-That makes it easy to handle with regular `try/catch`.
+Use regular `try/catch` in your app.
 
 ## Publishing
-
-From the package directory:
 
 ```bash
 npm publish --access public
@@ -216,4 +151,4 @@ npm publish --access public
 
 ## License
 
-[uropean Union Public Licence v.1.2](https://eupl.eu/1.2/en/)
+EUROPEAN UNION PUBLIC LICENCE v. 1.2

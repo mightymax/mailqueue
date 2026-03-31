@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PageProps } from './$types';
 
-  let { data, form }: PageProps = $props();
+  let { data }: PageProps = $props();
   const values = $derived(
-    form?.values ?? {
+    data.flash?.values ?? {
       name: data.token.name,
       websiteUrl: data.token.websiteUrl,
       fromEmail: data.token.fromEmail ?? '',
@@ -53,20 +53,20 @@
     </div>
   </form>
 
-  {#if form?.createdToken}
+  {#if data.flash?.createdToken}
     <div class="reveal">
       <strong>Nieuwe Bearer token</strong>
-      <code>{form.createdToken.token}</code>
+      <code>{data.flash.createdToken.token}</code>
       <p>Deze wordt maar een keer getoond. Oude token werkt niet meer.</p>
     </div>
   {/if}
 
-  {#if form?.error}
-    <p class="feedback error">{form.error}</p>
+  {#if data.flash?.error}
+    <p class="feedback error">{data.flash.error}</p>
   {/if}
 
-  {#if form?.message}
-    <p class="feedback success">{form.message}</p>
+  {#if data.flash?.message}
+    <p class="feedback success">{data.flash.message}</p>
   {/if}
 </section>
 

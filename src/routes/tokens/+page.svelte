@@ -1,7 +1,13 @@
 <script lang="ts">
   import type { PageProps } from './$types';
 
-  let { data, form }: PageProps = $props();
+  let { data }: PageProps = $props();
+  const values = $derived(data.flash?.values ?? {
+    name: '',
+    websiteUrl: '',
+    fromEmail: '',
+    smtpServiceId: ''
+  });
 </script>
 
 <section class="split">
@@ -11,22 +17,24 @@
     <form method="POST" action="?/create" class="form">
       <label>
         Naam
-        <input name="name" placeholder="Billing app" required />
+        <input name="name" placeholder="Billing app" required value={values.name} />
       </label>
       <label>
         Website URL
-        <input name="websiteUrl" type="url" placeholder="https://billing.ldmax.nl" required />
+        <input name="websiteUrl" type="url" placeholder="https://billing.ldmax.nl" required value={values.websiteUrl} />
       </label>
       <label>
         Mail from
-        <input name="fromEmail" type="email" placeholder="no-reply@example.com" required />
+        <input name="fromEmail" type="email" placeholder="no-reply@example.com" required value={values.fromEmail} />
       </label>
       <label>
         SMTP service
         <select name="smtpServiceId" required disabled={data.smtpServices.length === 0}>
           <option value="">Kies een service</option>
           {#each data.smtpServices as service (service.id)}
-            <option value={service.id}>{service.name} ({service.host}:{service.port})</option>
+            <option value={service.id} selected={service.id === values.smtpServiceId}>
+              {service.name} ({service.host}:{service.port})
+            </option>
           {/each}
         </select>
       </label>
@@ -36,12 +44,16 @@
       <button type="submit">Token aanmaken</button>
     </form>
 
-    {#if form?.createdToken}
+    {#if data.flash?.createdToken}
       <div class="reveal">
         <strong>Nieuwe Bearer token</strong>
-        <code>{form.createdToken.token}</code>
+        <code>{data.flash.createdToken.token}</code>
         <p>Sla deze direct op. Alleen de hash wordt in Postgres bewaard.</p>
       </div>
+    {/if}
+
+    {#if data.flash?.error}
+      <p class="hint">{data.flash.error}</p>
     {/if}
   </article>
 

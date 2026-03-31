@@ -22,7 +22,7 @@ spec:
           command:
             - /bin/sh
             - -c
-            - npm run db:migrate && node build
+            - npm run db:migrate && npm run start:prod
           ports:
             - name: http
               containerPort: 3000

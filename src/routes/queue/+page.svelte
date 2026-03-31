@@ -26,6 +26,14 @@
     <p class="feedback">Geen verzendbare mails gevonden in de queue.</p>
   {/if}
 
+  {#if data.action === 'retry'}
+    <p class="feedback success">Queue-item opnieuw ingepland.</p>
+  {/if}
+
+  {#if data.action === 'cancel'}
+    <p class="feedback">Queue-item geannuleerd.</p>
+  {/if}
+
   <div class="table-wrap">
     <table>
       <thead>

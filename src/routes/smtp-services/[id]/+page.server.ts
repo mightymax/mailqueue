@@ -1,4 +1,5 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
+import { consumeFlash, setFlash } from '$lib/server/flash';
 import { getSmtpServiceForEdit, updateSmtpService } from '$lib/server/repositories';
 import { verifySmtpConnection } from '$lib/server/smtp';
 import type { Actions, PageServerLoad } from './$types';
@@ -23,52 +24,68 @@ type ParsedSmtpForm =
       values: Record<string, string>;
     };
 
-export const load: PageServerLoad = async ({ params }) => {
+type SmtpFlash = {
+  success?: boolean;
+  stage?: 'test' | 'update';
+  message?: string;
+  error?: string;
+  values?: Record<string, string>;
+};
+
+export const load: PageServerLoad = async ({ params, cookies }) => {
   const service = await getSmtpServiceForEdit(params.id);
   if (!service) {
     error(404, 'SMTP service not found');
   }
 
-  return { service };
+  return {
+    service,
+    flash: consumeFlash<SmtpFlash>(cookies, `smtp-service-${params.id}`)
+  };
 };
 
 export const actions: Actions = {
-  test: async ({ request }) => {
+  test: async ({ request, cookies, params }) => {
     const parsed = await parseSmtpForm(request);
     if (!parsed.ok) {
-      return fail(parsed.status, { error: parsed.error, stage: 'test', values: parsed.values });
+      setFlash(cookies, `smtp-service-${params.id}`, { error: parsed.error, stage: 'test', values: parsed.values });
+      redirect(303, `/smtp-services/${params.id}`);
     }
 
     try {
       await verifySmtpConnection(parsed.value);
-      return {
+      setFlash(cookies, `smtp-service-${params.id}`, {
         success: true,
         stage: 'test',
         message: 'SMTP verbinding succesvol getest',
         values: parsed.values
-      };
+      });
+      redirect(303, `/smtp-services/${params.id}`);
     } catch (err) {
-      return fail(400, {
+      setFlash(cookies, `smtp-service-${params.id}`, {
         error: err instanceof Error ? err.message : 'SMTP test failed',
         stage: 'test',
         values: parsed.values
       });
+      redirect(303, `/smtp-services/${params.id}`);
     }
   },
-  update: async ({ request, params }) => {
+  update: async ({ request, params, cookies }) => {
     const parsed = await parseSmtpForm(request);
     if (!parsed.ok) {
-      return fail(parsed.status, { error: parsed.error, stage: 'update', values: parsed.values });
+      setFlash(cookies, `smtp-service-${params.id}`, { error: parsed.error, stage: 'update', values: parsed.values });
+      redirect(303, `/smtp-services/${params.id}`);
     }
 
     try {
       await verifySmtpConnection(parsed.value);
     } catch (err) {
-      return fail(400, {
+      setFlash(cookies, `smtp-service-${params.id}`, {
         error: err instanceof Error ? err.message : 'SMTP test failed',
         stage: 'update',
         values: parsed.values
       });
+      redirect(303, `/smtp-services/${params.id}`);
     }
 
     await updateSmtpService(params.id, parsed.value);

@@ -18,4 +18,4 @@ COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/src ./src
 COPY package.json ./
 EXPOSE 3000
-CMD ["node", "build"]
+CMD ["npm", "run", "start:prod"]

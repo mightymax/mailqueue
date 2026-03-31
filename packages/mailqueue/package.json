@@ -1,6 +1,6 @@
 {
-  "name": "mailqueue",
-  "version": "0.1.0",
+  "name": "@mightymax/mailqueue",
+  "version": "0.1.3",
   "description": "Simple JavaScript client for the LDMax mailqueue API",
   "type": "module",
   "exports": {
@@ -9,6 +9,7 @@
       "import": "./index.js"
     }
   },
+  "readmeFilename": "README.md",
   "files": [
     "index.js",
     "index.d.ts",
@@ -31,7 +32,7 @@
   "bugs": {
     "url": "https://github.com/mightymax/mailqueue/issues"
   },
-  "license": "MIT",
+  "license": "EUPL-1.2",
   "sideEffects": false,
   "engines": {
     "node": ">=18"

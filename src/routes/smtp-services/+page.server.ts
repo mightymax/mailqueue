@@ -1,4 +1,5 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import { consumeFlash, setFlash } from '$lib/server/flash';
 import { createSmtpService, listSmtpServices } from '$lib/server/repositories';
 import { verifySmtpConnection } from '$lib/server/smtp';
 import type { Actions, PageServerLoad } from './$types';
@@ -23,49 +24,63 @@ type ParsedSmtpForm =
       values: Record<string, string>;
     };
 
-export const load: PageServerLoad = async () => {
+type SmtpFlash = {
+  success?: boolean;
+  stage?: 'test' | 'create';
+  message?: string;
+  error?: string;
+  values?: Record<string, string>;
+};
+
+export const load: PageServerLoad = async ({ cookies }) => {
   return {
-    services: await listSmtpServices()
+    services: await listSmtpServices(),
+    flash: consumeFlash<SmtpFlash>(cookies, 'smtp-services')
   };
 };
 
 export const actions: Actions = {
-  test: async ({ request }) => {
+  test: async ({ request, cookies }) => {
     const parsed = await parseSmtpForm(request);
     if (!parsed.ok) {
-      return fail(parsed.status, { error: parsed.error, stage: 'test', values: parsed.values });
+      setFlash(cookies, 'smtp-services', { error: parsed.error, stage: 'test', values: parsed.values });
+      redirect(303, '/smtp-services');
     }
 
     try {
       await verifySmtpConnection(parsed.value);
-      return {
+      setFlash(cookies, 'smtp-services', {
         success: true,
         stage: 'test',
         message: 'SMTP verbinding succesvol getest',
         values: parsed.values
-      };
+      });
+      redirect(303, '/smtp-services');
     } catch (error) {
-      return fail(400, {
+      setFlash(cookies, 'smtp-services', {
         error: error instanceof Error ? error.message : 'SMTP test failed',
         stage: 'test',
         values: parsed.values
       });
+      redirect(303, '/smtp-services');
     }
   },
-  create: async ({ request }) => {
+  create: async ({ request, cookies }) => {
     const parsed = await parseSmtpForm(request);
     if (!parsed.ok) {
-      return fail(parsed.status, { error: parsed.error, stage: 'create', values: parsed.values });
+      setFlash(cookies, 'smtp-services', { error: parsed.error, stage: 'create', values: parsed.values });
+      redirect(303, '/smtp-services');
     }
 
     try {
       await verifySmtpConnection(parsed.value);
     } catch (error) {
-      return fail(400, {
+      setFlash(cookies, 'smtp-services', {
         error: error instanceof Error ? error.message : 'SMTP test failed',
         stage: 'create',
         values: parsed.values
       });
+      redirect(303, '/smtp-services');
     }
 
     const created = await createSmtpService({

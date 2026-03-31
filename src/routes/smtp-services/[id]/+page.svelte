@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PageProps } from './$types';
 
-  let { data, form }: PageProps = $props();
+  let { data }: PageProps = $props();
   const values = $derived(
-    form?.values ?? {
+    data.flash?.values ?? {
       name: data.service.name,
       host: data.service.host,
       port: String(data.service.port),
@@ -64,12 +64,12 @@
     </div>
   </form>
 
-  {#if form?.message}
-    <p class:success={form.success} class:feedback={true}>{form.message}</p>
+  {#if data.flash?.message}
+    <p class:success={data.flash.success} class:feedback={true}>{data.flash.message}</p>
   {/if}
 
-  {#if form?.error}
-    <p class="feedback error">{form.error}</p>
+  {#if data.flash?.error}
+    <p class="feedback error">{data.flash.error}</p>
   {/if}
 </section>
 

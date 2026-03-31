@@ -8,7 +8,7 @@
 <section class="hero">
   <div>
     <p class="kicker">Operational dashboard</p>
-    <h2>Beheer uitgaande mail zonder afhankelijk te zijn van app-specifieke SMTP logica.</h2>
+    <h2>LDMax mailing platform</h2>
   </div>
   <div class="panel">
     <p>API-clients zetten mail in de queue via Bearer tokens. De worker claimt batches uit Postgres en levert af via SMTP.</p>

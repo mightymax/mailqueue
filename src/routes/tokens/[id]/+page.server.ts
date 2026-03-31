@@ -1,4 +1,5 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
+import { consumeFlash, setFlash } from '$lib/server/flash';
 import {
   getTokenForEdit,
   listSmtpServices,
@@ -26,42 +27,63 @@ type ParsedTokenForm =
       values: Record<string, string>;
     };
 
-export const load: PageServerLoad = async ({ params }) => {
+type TokenFlash = {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  values?: Record<string, string>;
+  createdToken?: {
+    token: string;
+  };
+};
+
+export const load: PageServerLoad = async ({ params, cookies }) => {
   const [token, smtpServices] = await Promise.all([getTokenForEdit(params.id), listSmtpServices()]);
   if (!token) {
     error(404, 'Client not found');
   }
 
-  return { token, smtpServices };
+  return {
+    token,
+    smtpServices,
+    flash: consumeFlash<TokenFlash>(cookies, `token-${params.id}`)
+  };
 };
 
 export const actions: Actions = {
-  update: async ({ request, params }) => {
+  update: async ({ request, params, cookies }) => {
     const parsed = await parseTokenForm(request);
     if (!parsed.ok) {
-      return fail(parsed.status, { error: parsed.error, values: parsed.values });
+      setFlash(cookies, `token-${params.id}`, { error: parsed.error, values: parsed.values });
+      redirect(303, `/tokens/${params.id}`);
     }
 
     if (!(await smtpServiceExists(parsed.value.smtpServiceId))) {
-      return fail(400, { error: 'Selected SMTP service does not exist', values: parsed.values });
+      setFlash(cookies, `token-${params.id}`, {
+        error: 'Selected SMTP service does not exist',
+        values: parsed.values
+      });
+      redirect(303, `/tokens/${params.id}`);
     }
 
     await updateToken(params.id, parsed.value);
     redirect(303, `/tokens/${params.id}?saved=1`);
   },
-  rotate: async ({ request, params }) => {
+  rotate: async ({ request, params, cookies }) => {
     const parsed = await parseTokenForm(request);
     if (!parsed.ok) {
-      return fail(parsed.status, { error: parsed.error, values: parsed.values });
+      setFlash(cookies, `token-${params.id}`, { error: parsed.error, values: parsed.values });
+      redirect(303, `/tokens/${params.id}`);
     }
 
     const createdToken = await rotateTokenSecret(params.id);
-    return {
+    setFlash(cookies, `token-${params.id}`, {
       success: true,
       message: 'Nieuwe bearer token gegenereerd',
       createdToken,
       values: parsed.values
-    };
+    });
+    redirect(303, `/tokens/${params.id}`);
   }
 };
 
