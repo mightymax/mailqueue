@@ -12,6 +12,7 @@
       password: data.service.password
     }
   );
+  const usingDirectTls = $derived(values.port === '465' && values.secure === 'on');
 </script>
 
 <section class="card">
@@ -20,6 +21,7 @@
     <div>
       <h2>{data.service.name}</h2>
       <p>Bewerk transportinstellingen en test de verbinding voordat je opslaat.</p>
+      <p class="helper">Aanbevolen voor k8s: poort 587 met STARTTLS. Gebruik 465 met directe TLS alleen als je zeker weet dat outbound 465 vanaf het cluster werkt.</p>
     </div>
     <a href="/smtp-services">Terug</a>
   </header>
@@ -41,6 +43,11 @@
       <input name="secure" type="checkbox" checked={values.secure === 'on'} />
       TLS direct (`secure=true`)
     </label>
+    {#if usingDirectTls}
+      <p class="warning">Waarschuwing: poort 465 met directe TLS gaf in dit cluster eerder timeouts. Gebruik bij voorkeur 587 zonder deze optie.</p>
+    {:else}
+      <p class="hint">Aanbevolen combinatie: poort 587 en `TLS direct` uit. Nodemailer gebruikt dan STARTTLS.</p>
+    {/if}
     <label>
       Username
       <input
@@ -105,6 +112,17 @@
   header p {
     margin: 0.35rem 0 0;
     color: #59625f;
+  }
+
+  .helper,
+  .hint,
+  .warning {
+    margin: 0.35rem 0 0;
+    color: #59625f;
+  }
+
+  .warning {
+    color: #9b5f55;
   }
 
   header a {
