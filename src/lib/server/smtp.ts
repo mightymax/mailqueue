@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { getConfig } from '$lib/server/env';
+import { getConfig } from './env.js';
 
 export async function verifySmtpConnection(input: {
   host: string;

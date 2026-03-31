@@ -1,10 +1,10 @@
 import crypto from 'node:crypto';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
-import type { QueueMailInput } from '$lib/server/validators';
-import { getDb } from '$lib/server/db';
-import { getConfig } from '$lib/server/env';
-import { apiTokens, mailQueue, smtpServices } from '$lib/server/db/schema';
-import { decryptSecret, encryptSecret, generateApiToken, hashToken } from '$lib/server/security';
+import type { QueueMailInput } from './validators.js';
+import { getDb } from './db.js';
+import { getConfig } from './env.js';
+import { apiTokens, mailQueue, smtpServices } from './db/schema.js';
+import { decryptSecret, encryptSecret, generateApiToken, hashToken } from './security.js';
 
 export type DashboardStats = {
   queued: number;

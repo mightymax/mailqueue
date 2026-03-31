@@ -1,9 +1,9 @@
 import nodemailer from 'nodemailer';
 import { eq, sql } from 'drizzle-orm';
-import { getDb, getSql } from '$lib/server/db';
-import { getConfig } from '$lib/server/env';
-import { apiTokens, mailQueue, smtpServices } from '$lib/server/db/schema';
-import { decryptSecret } from '$lib/server/security';
+import { getDb, getSql } from './db.js';
+import { getConfig } from './env.js';
+import { apiTokens, mailQueue, smtpServices } from './db/schema.js';
+import { decryptSecret } from './security.js';
 
 type ClaimedMail = {
   id: string;

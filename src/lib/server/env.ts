@@ -1,7 +1,55 @@
-import { env } from '$env/dynamic/private';
+import fs from 'node:fs';
+import path from 'node:path';
+
+function parseEnvFile(filePath: string): Record<string, string> {
+  const parsed: Record<string, string> = {};
+  if (!fs.existsSync(filePath)) return parsed;
+
+  for (const rawLine of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const separatorIndex = line.indexOf('=');
+    if (separatorIndex === -1) continue;
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    parsed[key] = value;
+  }
+
+  return parsed;
+}
+
+let cachedEnv: Record<string, string | undefined> | null = null;
+
+function getEnv() {
+  if (cachedEnv) return cachedEnv;
+
+  const cwd = process.cwd();
+  const baseEnv = parseEnvFile(path.join(cwd, '.env'));
+  const envProfile = String(process.env.ENV || process.env.NODE_ENV || '').trim();
+  const productionEnv =
+    envProfile === 'production' ? parseEnvFile(path.join(cwd, '.env.production')) : {};
+
+  cachedEnv = {
+    ...baseEnv,
+    ...productionEnv,
+    ...process.env
+  };
+
+  return cachedEnv;
+}
 
 function requireEnv(name: string): string {
-  const value = env[name];
+  const value = getEnv()[name];
   if (!value) {
     throw new Error(`Missing required environment variable ${name}`);
   }
@@ -9,13 +57,13 @@ function requireEnv(name: string): string {
 }
 
 function readBool(name: string, fallback: boolean): boolean {
-  const value = env[name];
+  const value = getEnv()[name];
   if (value === undefined) return fallback;
   return value === 'true';
 }
 
 function readInt(name: string, fallback: number): number {
-  const value = env[name];
+  const value = getEnv()[name];
   if (value === undefined) return fallback;
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) {
@@ -59,7 +107,7 @@ export function getConfig(): AppConfig {
     smtpSocketTimeoutMs: readInt('SMTP_SOCKET_TIMEOUT_MS', 8000),
     workerBatchSize: readInt('WORKER_BATCH_SIZE', 20),
     workerPollIntervalMs: readInt('WORKER_POLL_INTERVAL_MS', 5000),
-    publicBaseUrl: env.PUBLIC_BASE_URL ?? '',
+    publicBaseUrl: getEnv().PUBLIC_BASE_URL ?? '',
     appReplicas: readInt('APP_REPLICAS', 2)
   };
 
