@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { getQueueItem } from '$lib/server/repositories';
+import { getQueueItem } from '#lib/server/repositories.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {

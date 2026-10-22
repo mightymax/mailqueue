@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
-import { consumeFlash, setFlash } from '$lib/server/flash';
-import { createToken, listSmtpServices, listTokens, smtpServiceExists } from '$lib/server/repositories';
+import { consumeFlash, setFlash } from '#lib/server/flash.js';
+import { createToken, listSmtpServices, listTokens, smtpServiceExists } from '#lib/server/repositories.js';
 import type { Actions, PageServerLoad } from './$types';
 
 type TokensFlash = {

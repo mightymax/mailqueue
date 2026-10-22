@@ -1,4 +1,4 @@
-import { getDashboardStats, listQueue, listTokens } from '$lib/server/repositories';
+import { getDashboardStats, listQueue, listTokens } from '#lib/server/repositories.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {

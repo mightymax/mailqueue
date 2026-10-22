@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
-import { consumeFlash, setFlash } from '$lib/server/flash';
-import { createSmtpService, listSmtpServices } from '$lib/server/repositories';
-import { verifySmtpConnection } from '$lib/server/smtp';
+import { consumeFlash, setFlash } from '#lib/server/flash.js';
+import { createSmtpService, listSmtpServices } from '#lib/server/repositories.js';
+import { verifySmtpConnection } from '#lib/server/smtp.js';
 import type { Actions, PageServerLoad } from './$types';
 
 type ParsedSmtpForm =

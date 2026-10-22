@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { enqueueMail, getTokenById, listTokens } from '$lib/server/repositories';
+import { enqueueMail, getTokenById, listTokens } from '#lib/server/repositories.js';
 import type { Actions, PageServerLoad } from './$types';
 
 type ParsedForm =

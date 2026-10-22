@@ -86,7 +86,7 @@ export async function sendContactNotification(input: {
 
 ```ts
 import { fail } from '@sveltejs/kit';
-import { sendContactNotification } from '$lib/server/mailer';
+import { sendContactNotification } from '#lib/server/mailer';
 
 export const actions = {
   default: async ({ request }) => {

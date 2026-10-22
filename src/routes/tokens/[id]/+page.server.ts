@@ -1,12 +1,12 @@
 import { error, redirect } from '@sveltejs/kit';
-import { consumeFlash, setFlash } from '$lib/server/flash';
+import { consumeFlash, setFlash } from '#lib/server/flash.js';
 import {
   getTokenForEdit,
   listSmtpServices,
   rotateTokenSecret,
   smtpServiceExists,
   updateToken
-} from '$lib/server/repositories';
+} from '#lib/server/repositories.js';
 import type { Actions, PageServerLoad } from './$types';
 
 type ParsedTokenForm =

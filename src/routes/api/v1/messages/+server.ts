@@ -1,6 +1,6 @@
-import { error, json, type RequestHandler } from '@sveltejs/kit';
-import { enqueueMail, findTokenByBearer, touchTokenUsage } from '$lib/server/repositories';
-import { queueMailSchema } from '$lib/server/validators';
+import { error, type RequestHandler } from '@sveltejs/kit';
+import { enqueueMail, findTokenByBearer, touchTokenUsage } from '#lib/server/repositories.js';
+import { queueMailSchema } from '#lib/server/validators.js';
 
 async function authenticate(request: Request): Promise<{ id: string; fromEmail: string | null } | null> {
   const header = request.headers.get('authorization');
@@ -29,5 +29,5 @@ export const POST: RequestHandler = async ({ request }) => {
   const queued = await enqueueMail(token, parsed.data);
   await touchTokenUsage(token.id);
 
-  return json(queued, { status: 202 });
+  return Response.json(queued, { status: 202 });
 };

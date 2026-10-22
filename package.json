@@ -21,22 +21,26 @@
     "publish:package:dry-run": "cd packages/mailqueue && npm publish --access public --dry-run"
   },
   "devDependencies": {
-    "@sveltejs/adapter-node": "^5.2.12",
-    "@sveltejs/kit": "^2.48.4",
-    "@sveltejs/vite-plugin-svelte": "^6.2.1",
-    "@types/node": "^24.6.1",
-    "@types/nodemailer": "^7.0.3",
-    "drizzle-kit": "^0.31.4",
-    "svelte": "^5.39.6",
-    "svelte-check": "^4.3.1",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.7"
+    "@sveltejs/adapter-node": "^6.0.0",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "^24.19.2",
+    "@types/nodemailer": "^8.0.2",
+    "drizzle-kit": "^0.31.11",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.5"
   },
   "dependencies": {
-    "drizzle-orm": "^0.44.5",
-    "nodemailer": "^7.0.6",
-    "postgres": "^3.4.7",
-    "zod": "^4.1.11"
+    "drizzle-orm": "^0.45.4",
+    "nodemailer": "^10.2.1",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.7"
+  },
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
   }
 }

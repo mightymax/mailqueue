@@ -1,6 +1,6 @@
-import type { Handle } from '@sveltejs/kit';
-import { getConfig } from '$lib/server/env';
-import { basicAuthMatches } from '$lib/server/security';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
+import { getConfig } from '#lib/server/env.js';
+import { basicAuthMatches } from '#lib/server/security.js';
 
 const PUBLIC_PATHS = new Set(['/healthz']);
 
@@ -33,9 +33,9 @@ export const handle: Handle = async ({ event, resolve }) => {
   return resolve(event);
 };
 
-export function handleError({ error: err }) {
+export const handleError: HandleServerError = ({ error: err, kind }) => {
+  // SvelteKit 3 also passes expected HTTP errors through this hook.
+  if (kind !== 'unknown') return;
   console.error(err);
-  return {
-    message: 'Internal server error'
-  };
-}
+  return { message: 'Internal server error' };
+};

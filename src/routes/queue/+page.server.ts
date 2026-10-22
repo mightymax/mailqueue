@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getConfig } from '$lib/server/env';
-import { deleteQueueItems, listQueue, resetQueueItems, setQueueItemsStatus } from '$lib/server/repositories';
-import { deliverMailBatch } from '$lib/server/worker';
+import { getConfig } from '#lib/server/env.js';
+import { deleteQueueItems, listQueue, resetQueueItems, setQueueItemsStatus } from '#lib/server/repositories.js';
+import { deliverMailBatch } from '#lib/server/worker.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => {

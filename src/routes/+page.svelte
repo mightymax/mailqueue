@@ -1,5 +1,5 @@
 <script lang="ts">
-  import StatCard from '$lib/components/StatCard.svelte';
+  import StatCard from '#lib/components/StatCard.svelte';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
